@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Hypertrophy Protocol</title>
+    <style>
+        :root {
+            --bg-color: #121214;
+            --card-bg: #1a1a1e;
+            --accent-color: #3b82f6;
+            --accent-success: #10b981;
+            --accent-warning: #f59e0b;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --border-color: #2a2a32;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 16px;
+            padding-bottom: 80px;
+        }
+
+        header {
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 4px;
+        }
+
+        header p {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+        }
+
+        .day-section {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            transition: transform 0.2s ease;
+        }
+
+        .day-header {
+            padding: 16px;
+            background-color: rgba(255, 255, 255, 0.02);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            border-bottom: 1px solid transparent;
+        }
+
+        .day-section.active .day-header {
+            border-bottom-color: var(--border-color);
+        }
+
+        .day-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .day-subtitle {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .chevron {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: var(--text-muted);
+            stroke-width: 2;
+            transition: transform 0.3s ease;
+        }
+
+        .day-section.active .chevron {
+            transform: rotate(180deg);
+            stroke: var(--accent-color);
+        }
+
+        .day-content {
+            display: none;
+            padding: 16px;
+        }
+
+        .day-section.active .day-content {
+            display: block;
+        }
+
+        .exercise-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+            border-left: 3px solid var(--accent-color);
+            padding-left: 12px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .exercise-card:last-child {
+            margin-bottom: 0;
+        }
+
+        .checkbox-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 2px;
+            cursor: pointer;
+        }
+
+        .workout-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border-color);
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.02);
+            display: inline-grid;
+            place-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .workout-checkbox::before {
+            content: "";
+            width: 12px;
+            height: 12px;
+            transform: scale(0);
+            transform-origin: center;
+            transition: 0.15s transform ease-in-out;
+            background-color: #ffffff;
+            clip-path: polygon(14% 44%, 0 58%, 38% 96%, 100% 23%, 86% 9%, 38% 68%);
+        }
+
+        .workout-checkbox:checked {
+            background-color: var(--accent-color);
+            border-color: var(--accent-color);
+        }
+
+        .workout-checkbox:checked::before {
+            transform: scale(1);
+        }
+
+        .exercise-info {
+            flex: 1;
+        }
+
+        .exercise-name {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            transition: color 0.3s ease;
+        }
+
+        .meta-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 6px;
+            flex-wrap: wrap;
+        }
+
+        .exercise-meta {
+            font-size: 0.875rem;
+            font-weight: 700;
+            color: var(--accent-color);
+            transition: color 0.3s ease;
+        }
+
+        /* Inline Rest Timer UI */
+        .rest-timer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            background-color: #22252a;
+            border: 1px solid var(--border-color);
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--text-muted);
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s ease;
+        }
+
+        .rest-timer-badge:hover {
+            border-color: var(--text-muted);
+        }
+
+        .rest-timer-badge.running {
+            background-color: rgba(245, 158, 11, 0.15);
+            border-color: var(--accent-warning);
+            color: var(--accent-warning);
+        }
+
+        .rest-timer-badge.finished {
+            background-color: rgba(16, 185, 129, 0.15);
+            border-color: var(--accent-success);
+            color: var(--accent-success);
+            animation: pulse-green 1.5s infinite;
+        }
+
+        .rest-timer-badge svg {
+            width: 12px;
+            height: 12px;
+            fill: currentColor;
+        }
+
+        @keyframes pulse-green {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.04); }
+            100% { transform: scale(1); }
+        }
+
+        .exercise-tips {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.4;
+            transition: color 0.3s ease;
+        }
+
+        .exercise-image-container {
+            width: 100%;
+            margin-top: 12px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--border-color);
+            background-color: rgba(0,0,0,0.15);
+            transition: opacity 0.3s ease;
+            display: flex;
+            justify-content: flex-start;
+            align-items: center;
+            padding: 4px;
+        }
+
+        .exercise-image {
+            height: 150px;
+            width: auto;
+            max-width: 100%;
+            object-fit: contain;
+            display: block;
+        }
+
+        .exercise-card.completed {
+            border-left-color: var(--border-color);
+            opacity: 0.4;
+        }
+
+        .exercise-card.completed .exercise-name {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        .exercise-card.completed .exercise-meta {
+            color: var(--text-muted);
+        }
+
+        .exercise-card.completed .exercise-image-container {
+            opacity: 0.3;
+        }
+
+        .intensity-banner {
+            background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+            border: 1px solid #334155;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            margin-bottom: 20px;
+            color: #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>4-Day Hypertrophy Protocol</h1>
+        <p>M / F / S / S Routine</p>
+    </header>
+
+    <div class="intensity-banner">
+        <strong>Coach Note:</strong> All working sets taken to 1 RIR or mechanical failure. Keep rest periods to 2-3 minutes for maximum neurological recovery. Timers default to 2:00 or 3:00 depending on neurological cost.
+    </div>
+
+    <div class="day-section" id="day-monday">
+        <div class="day-header" onclick="toggleSection(this)">
+            <div>
+                <div class="day-title">Monday</div>
+                <div class="day-subtitle">Shoulders, Arms & Abs</div>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="day-content">
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Seated Shoulder Press Maschine</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 6–8 reps</div>
+                        <div class="rest-timer-badge" data-duration="180" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">3:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Keep elbows slightly tucked forward at a 30-degree angle to protect rotator cuffs. Control the descent.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_2029192408_0.jpg" class="exercise-image" alt="Seated Shoulder Press">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Standing Cable Lateral Raises</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">4 sets x 10–12 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Set pulley at wrist height when arm is down. Lean slightly away from stack to maximize bottom stretch.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_2029192408_1.jpg" class="exercise-image" alt="Standing Cable Lateral Raises">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Incline Dumbbell Bicep Curls</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 8–10 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Set bench to 45 degrees. Keep shoulders pinned against the pad. Lock elbows in place.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_2029192408_2.jpg" class="exercise-image" alt="Incline Dumbbell Bicep Curls">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Dual Cable Tricep Pushdowns</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 10–12 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Use independent cables to pull past your hips at the bottom for a deeper tricep contraction.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_2029192408_3.jpg" class="exercise-image" alt="Dual Cable Tricep Pushdowns">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">EZ-Bar Preacher Curls</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 10–12 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Stop just short of total lockout at the bottom to maintain constant tension and protect tendons.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_2029192408_4.jpg" class="exercise-image" alt="EZ-Bar Preacher Curls">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Overhead Cable Tricep Extensions</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 10–12 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Brace core, face away from stack. Focus entirely on extension at the elbow without drifting upper arm.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_2029192408_5.jpg" class="exercise-image" alt="Overhead Cable Tricep Extensions">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="day-section" id="day-friday">
+        <div class="day-header" onclick="toggleSection(this)">
+            <div>
+                <div class="day-title">Friday</div>
+                <div class="day-subtitle">Legs (The Weekly Leg War)</div>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="day-content">
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Hack Squat</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 6–8 reps</div>
+                        <div class="rest-timer-badge" data-duration="180" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">3:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Place feet low on platform for deep knee flexion. Keep heels planted. Control the 3-second negative.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1380858377_0.jpg" class="exercise-image" alt="Hack Squat Form">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Seated Leg Curl</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 8–10 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Pull thigh pad down tightly against legs to lock pelvis. Squeeze hard at peak contraction.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1380858377_1.jpg" class="exercise-image" alt="Seated Leg Curl Form">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Leg Press</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 10–12 reps</div>
+                        <div class="rest-timer-badge" data-duration="180" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">3:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Foot placement low and shoulder-width for quad bias. Deep controlled range without lifting lower back.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1380858377_2.jpg" class="exercise-image" alt="Leg Press Form">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Romanian Dumbell Deadlifts</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 8–10 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Soft bend in knees, push hips back as far as possible. Stop when hips stop moving backward to spare lower back.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1380858377_3.jpg" class="exercise-image" alt="Romanian Deadlifts Form">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Standing Calf Raises</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">4 sets x 12–15 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Drop heels completely, hold deep stretch for 2 full seconds to eliminate momentum, then explode up.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1380858377_4.jpg" class="exercise-image" alt="Standing Calf Raises Form">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="day-section" id="day-saturday">
+        <div class="day-header" onclick="toggleSection(this)">
+            <div>
+                <div class="day-title">Saturday</div>
+                <div class="day-subtitle">Chest & Back</div>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="day-content">
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Incline Chest Press</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 6–8 reps</div>
+                        <div class="rest-timer-badge" data-duration="180" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">3:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Use a modest 30-degree incline. Arch upper back slightly and drive feet into the floor for stability.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1583461792_0.jpg" class="exercise-image" alt="Incline Chest Press Form">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">T-Bar Row</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 6–8 reps</div>
+                        <div class="rest-timer-badge" data-duration="180" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">3:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Let shoulder blades fully stretch forward at the bottom, drive elbows back behind torso to finish.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1583461792_1.jpg" class="exercise-image" alt="T-Bar Row Form">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Flat Machine Press</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 8–10 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Adjust seat height so handles align with mid-chest. Drive shoulder blades deep into the pad.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1583461792_2.jpg" class="exercise-image" alt="Flat Machine Press Form">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Neutral Grip Lat Pulldown</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 8–10 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Lean back slightly (10-15 degrees) and pull straight down to upper chest, driving down with elbows.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1583461792_3.jpg" class="exercise-image" alt="Lat Pulldown Form">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Machine Rear Delt Flyes</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 12–15 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Keep a slight bend in elbows and focus on pushing hands outward to the walls rather than pulling back.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1583461792_4.jpg" class="exercise-image" alt="Rear Delt Flyes Form">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="day-section" id="day-sunday">
+        <div class="day-header" onclick="toggleSection(this)">
+            <div>
+                <div class="day-title">Sunday</div>
+                <div class="day-subtitle">Sunday: Upper Body Hypertrophy</div>
+            </div>
+            <svg class="chevron" viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="day-content">
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Very-Close Converging Chest Press</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 10–12 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Keep shoulders packed down and back. Focus entirely on pressing your biceps together at peak contraction.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1677496159_0.jpg" class="exercise-image" alt="Very-Close Converging Chest Press">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Cable Pullovers</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 10–12 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Use a close neutral grip. Pull handle low toward your belly button, keeping shoulders dropped down.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1677496159_1.jpg" class="exercise-image" alt="Cable Pullovers">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Incline Cable Flyes</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 12–15 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Focus heavily on the deep, loaded stretch at the bottom where cables offer maximum continuous tension.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1677496159_2.jpg" class="exercise-image" alt="Incline Cable Flyes">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Lateral Raises</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">4 sets x 12–15 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Tilt torso slightly forward, raise dumbbells out to the sides in a wide arc. Keep pinkies slightly high.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1677496159_3.jpg" class="exercise-image" alt="Dumbbell Lateral Raises">
+                    </div>
+                </div>
+            </div>
+            <div class="exercise-card">
+                <div class="checkbox-container">
+                    <input type="checkbox" class="workout-checkbox" onchange="toggleComplete(this)">
+                </div>
+                <div class="exercise-info">
+                    <div class="exercise-name">Face Pulls</div>
+                    <div class="meta-row">
+                        <div class="exercise-meta">3 sets x 12–15 reps</div>
+                        <div class="rest-timer-badge" data-duration="120" onclick="handleTimerClick(this)">
+                            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z"/></svg>
+                            <span class="timer-text">2:00</span>
+                        </div>
+                    </div>
+                    <div class="exercise-tips">Pull center of rope straight toward your nose, flaring elbows high and pulling hands apart at the back.</div>
+                    <div class="exercise-image-container">
+                        <img src="cellImage_1677496159_4.jpg" class="exercise-image" alt="Face Pulls">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function toggleSection(element) {
+            const parent = element.parentElement;
+            parent.classList.toggle('active');
+        }
+
+        function toggleComplete(checkbox) {
+            const card = checkbox.closest('.exercise-card');
+            if (checkbox.checked) {
+                card.classList.add('completed');
+            } else {
+                card.classList.remove('completed');
+            }
+        }
+
+        // Rest Timer Core Logic
+        let activeIntervals = new Map();
+        let remainingTimes = new Map();
+
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60);
+            const s = seconds % 60;
+            return `${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function playAlertSound() {
+            try {
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (!AudioContext) return;
+                const ctx = new AudioContext();
+
+                // Sound cue: High clear double-chirp
+                const playChirp = (time, freq) => {
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(freq, time);
+                    gain.gain.setValueAtTime(0.2, time);
+                    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.15);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start(time);
+                    osc.stop(time + 0.15);
+                };
+
+                const now = ctx.currentTime;
+                playChirp(now, 880);
+                playChirp(now + 0.2, 880);
+            } catch (e) {
+                console.log("Audio not allowed yet or uninitialized context");
+            }
+        }
+
+        function triggerHapticAlert() {
+            if ('vibrate' in navigator) {
+                // Double vibration heartbeat pulse
+                navigator.vibrate();
+            }
+        }
+
+        function handleTimerClick(badge) {
+            // Check if timer state needs clearing down after finish flag
+            if (badge.classList.contains('finished')) {
+                resetTimer(badge);
+                return;
+            }
+
+            if (activeIntervals.has(badge)) {
+                // Pause active running state
+                clearInterval(activeIntervals.get(badge));
+                activeIntervals.delete(badge);
+                badge.classList.remove('running');
+            } else {
+                // Start tracking timer runtime loop
+                badge.classList.add('running');
+                let timeLeft = remainingTimes.has(badge) ? remainingTimes.get(badge) : parseInt(badge.dataset.duration, 10);
+
+                const textEl = badge.querySelector('.timer-text');
+
+                const interval = setInterval(() => {
+                    timeLeft--;
+                    remainingTimes.set(badge, timeLeft);
+                    textEl.textContent = formatTime(timeLeft);
+
+                    if (timeLeft <= 0) {
+                        clearInterval(interval);
+                        activeIntervals.delete(badge);
+                        remainingTimes.delete(badge);
+
+                        badge.classList.remove('running');
+                        badge.classList.add('finished');
+                        textEl.textContent = "Time Up!";
+
+                        playAlertSound();
+                        triggerHapticAlert();
+
+                        // Auto reset complete tag back to setup layout footprint after 2s
+                        setTimeout(() => {
+                            if (badge.classList.contains('finished')) {
+                                resetTimer(badge);
+                            }
+                        }, 2500);
+                    }
+                }, 1000);
+
+                activeIntervals.set(badge, interval);
+            }
+        }
+
+        function resetTimer(badge) {
+            if (activeIntervals.has(badge)) {
+                clearInterval(activeIntervals.get(badge));
+                activeIntervals.delete(badge);
+            }
+            remainingTimes.delete(badge);
+            badge.classList.remove('running', 'finished');
+            badge.querySelector('.timer-text').textContent = formatTime(parseInt(badge.dataset.duration, 10));
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const daysMap = {
+                1: 'day-monday',
+                5: 'day-friday',
+                6: 'day-saturday',
+                0: 'day-sunday'
+            };
+
+            const currentDayNumber = new Date().getDay();
+            const targetId = daysMap[currentDayNumber];
+
+            if (targetId) {
+                const targetSection = document.getElementById(targetId);
+                if (targetSection) {
+                    targetSection.classList.add('active');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
